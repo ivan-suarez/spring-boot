@@ -54,15 +54,14 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 import org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.tracing.OpenTelemetryEventPublisherApplicationListener.EventPublisherBeansContextWrapper;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.context.annotation.Configurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.testsupport.classpath.ForkedClassPath;
@@ -79,23 +78,18 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
 /**
- * Tests for {@link OpenTelemetryAutoConfiguration}.
+ * Tests for {@link OpenTelemetryTracingAutoConfiguration}.
  *
  * @author Moritz Halbritter
  * @author Andy Wilkinson
  * @author Yanming Zhou
  */
-class OpenTelemetryAutoConfigurationTests {
+class OpenTelemetryTracingAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(
 				org.springframework.boot.actuate.autoconfigure.opentelemetry.OpenTelemetryAutoConfiguration.class,
-				OpenTelemetryAutoConfiguration.class));
-
-	@BeforeAll
-	static void addWrapper() {
-		EventPublisherBeansContextWrapper.addWrapperIfNecessary();
-	}
+				OpenTelemetryTracingAutoConfiguration.class));
 
 	@Test
 	void shouldSupplyBeans() {
@@ -345,8 +339,15 @@ class OpenTelemetryAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	@SuppressWarnings("removal")
+	void shouldUseReplacementForDeprecatedVersion() {
+		Class<?>[] classes = Configurations.getClasses(AutoConfigurations.of(OpenTelemetryAutoConfiguration.class));
+		assertThat(classes).containsExactly(OpenTelemetryTracingAutoConfiguration.class);
+	}
+
 	private void initializeOpenTelemetry(ConfigurableApplicationContext context) {
-		context.addApplicationListener(new OpenTelemetryEventPublisherApplicationListener());
+		context.addApplicationListener(new OpenTelemetryEventPublisherBeansApplicationListener());
 		Span.current();
 	}
 
